@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Poignant guide to Ruby and Rails</title>
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Poignant guide to Ruby and Rails</h1>
+				</section>
+
+				<section>
+					<h2>Łukasz Strzebińczyk</h2>
+				</section>
+
+        <section>
+          What is Ruby?
+        </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				<section>
+					<h2>Use the right tool for the right job</h2>
+				</section>
+
+				<section>
+					<h3>MySQL</h3>
+					<img src="mysql_knife.jpg" />
+				</section>
+
+				<section>
+					<h3>MongoDB</h3>
+					<img src="mongo_knife.jpg" />
+				</section>
+
+				<section>
+					<h2>PostgreSQL</h2>
+					<img src="postgres_knife.jpg" />
+				</section>
+
+				<section>
+					<h2>HStore</h2>
+					<img src="hstore.png" />
+				</section>
+
+				<section>
+					<h2>HStore</h2>
+					<pre class="fragment"><code data-trim>
+CREATE EXTENSION "hstore";
+					</code></pre>
+					<pre class="fragment"><code data-trim>
+ALTER TABLE users ADD COLUMN settings hstore;
+					</code></pre>
+
+					<pre class="fragment"><code data-trim>
+ INSERT INTO "users" values(1, 'admin=>"true",likes_count=>"9"');
+					</code></pre>
+
+					<pre class="fragment"><code data-trim>
+ SELECT * FROM "users" WHERE settings->'admin' = 'true';
+					</code></pre>
+
+          <pre class="fragment"><code data-trim>
+ add_column :users, :settings, :hstore
+          </code></pre>
+
+          <pre class="fragment"><code data-trim>
+User.where("settings -> 'admin' = 'true'")
+          </code></pre>
+				</section>
+
+				<section>
+					<h2>HStore – limitations</h2>
+					<ul>
+						<li class="fragment">Can’t nest objects</li>
+						<li class="fragment">Stores everything as text</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>JSON</h2>
+				</section>
+
+				<section>
+					<h2>JSON</h2>
+					We can nest things!
+					<pre class="fragment"><code data-trim>
+ALTER TABLE users ADD COLUMN json_settings json;
+					</code></pre>
+					<pre class="fragment"><code data-trim>
+UPDATE "users" SET json_settings =
+ '{
+   "likes_count": 9,
+   "roles": ["moderator", "super-moderator"],
+   "we": {"can": {"nest": "things"} }
+  }
+ ';
+					</code></pre>
+					<pre class="fragment"><code data-trim>
+SELECT * FROM "users" WHERE
+ json_extract_path(json_settings, 'we', 'can', 'nest') = 'things';
+					</code></pre>
+				</section>
+
+				<section>
+					<h2>JSON objects</h2>
+					<pre class="fragment"><code data-trim>
+UPDATE "users" SET json_settings =
+ '{
+   "likes_count": 9,
+   "roles": ["moderator", "super-moderator"],
+   "we": {"can": {"nest": "things"} }
+  }
+ ';
+					</code></pre>
+					<pre class="fragment"><code data-trim>
+SELECT * FROM "users" WHERE
+ '"moderator"' IN(
+  SELECT value::text FROM json_array_elements(json_settings->'roles')
+ );
+					</code></pre>
+				</section>
+
+        <section>
+          <h2>JSON – indexing</h2>
+          <pre class="fragment"><code data-trim>
+SELECT COUNT(*) FROM lodgings;
+count
+--------
+ 868922
+          </code></pre>
+          <pre class="fragment"><code data-trim>
+EXPLAIN ANALYZE SELECT raw_data::json->'name' FROM lodgings
+ WHERE raw_data::json->>'name' = 'Pousada do Pico';
+                                                       QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on lodgings  (cost=0.00..49279.68 rows=1037 width=467) (actual time=0.509..19126.720 rows=1 loops=1)
+   Filter: (((raw_data)::json ->> 'name'::text) = 'Pousada do Pico'::text)
+   Rows Removed by Filter: 209338
+ Total runtime: 19126.747 ms
+(4 rows)
+          </code></pre>
+          <pre class="fragment"><code data-trim>
+CREATE INDEX ON lodgings USING btree ( (raw_data::json->>'name') );
+          </code></pre>
+
+          <pre class="fragment"><code data-trim>
+EXPLAIN ANALYZE SELECT raw_data::json->'name' FROM lodgings
+ WHERE raw_data::json->>'name' = 'Pousada do Pico';
+                                                                   QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using lodgings_expr_idx on lodgings  (cost=0.43..8.45 rows=1 width=458) (actual time=0.295..0.297 rows=1 loops=1)
+   Index Cond: (((raw_data)::json ->> 'name'::text) = 'Pousada do Pico'::text)
+ Total runtime: 0.327 ms
+          </code></pre>
+        </section>
+
+				<!-- KILLA PART START -->
+        <section>
+          <h1>#to_json</h1>
+          <ul>
+            <li class="fragment">
+              <h3>JBuilder</h3>
+            </li>
+            <li class="fragment">
+              <h3>Rabl</h3>
+            </li>
+            <li class="fragment">
+              <h3>ActiveModel::Serializers</h3>
+            </li>
+            <li class="fragment">
+              <h3>PostgreSQL</h3>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Postgresql 9.2</h2>
+          <div>array_to_json(anyarray [, pretty_bool])</div>
+          <div>row_to_json(record [, pretty_bool])</div>
+        </section>
+
+        <section>
+          <h2>Postgresql 9.3</h2>
+          <div>to_json(anyelement)</div>
+          <div>json_agg(record)</div>
+          <div>json_array_length(json)</div>
+          <div>json_each(json)</div>
+          <div>json_each_text(from_json json)</div>
+          <div>json_extract_path(from_json json, VARIADIC path_elems text[])</div>
+          <div>json_extract_path_text(from_json json, VARIADIC path_elems text[])</div>
+          <div>json_object_keys(json)</div>
+          <div>json_populate_record(base anyelement, from_json json, [, use_json_as_text bool=false])</div>
+          <div>json_populate_recordset(base anyelement, from_json json, [, use_json_as_text bool=false])</div>
+          <div>json_array_elements(json)</div>
+        </section>
+
+        <section>
+<pre><code data-trim>
+SELECT Array_to_json(COALESCE(Array_agg(Row_to_json(t)), '{}'))
+FROM   (SELECT id,
+               title,
+               content,
+               (SELECT Row_to_json(t)
+                FROM   (SELECT id
+                        FROM   "authors"
+                        WHERE  ( "id" = "author_id" )) t) author
+        FROM   "posts") t
+</code></pre>
+        </section>
+
+        <section>
+          <pre><code data-trim>gem "surus"</code></pre>
+          <div class="fragment">
+            vs
+            <pre><code data-trim>gem "active_model_serializers"</code></pre>
+          </div>
+        </section>
+
+        <section>
+
+ActiveModel::Serializer
+<pre><code data-trim>
+class AuthorSerializer < ActiveModel::Serializer
+  attributes :id, :name
+end
+
+class PostSerializer < ActiveModel::Serializer
+  attributes :id, :title, :content
+  has_one :author
+end
+
+ActiveModel::ArraySerializer.new(
+  Post.all,
+  each_serializer: PostSerializer
+  ).to_json
+</code></pre>
+Surus
+<pre><code data-trim>
+Post.all_json(
+  columns: [:id, :title, :content],
+  include: {
+    author: {
+      columns: [:id, :name]
+    }
+  }
+  )
+</code></pre>
+        </section>
+
+        <section>
+          <img src="serialization_bench.png">
+        </section>
+
+        <section>
+<pre><code data-trim>
+def render_json(jobs)
+  json = jobs.all_json(
+    columns: [
+      :id, :system_id,
+      :stage, :label,
+      :description, :first_reference,
+      :second_reference, :cached_plate_names,
+      :priority, :notifications_bitmap,
+      :updated_at, :hidden
+      ],
+    include: {
+      end_customer: { columns: [:name] },
+      client: { columns: [:id, :short_name] },
+      print_supplier: { columns: [:short_name] }
+      })
+  render json: json
+end
+</code></pre>
+
+        </section>
+
+        <section>
+          <h1>Full text search</h1>
+          <img src="magnifying_glass.png" class="fragment" />
+        </section>
+
+        <section>
+        	<h1>Full text search</h1>
+          <ul>
+            <li class="fragment">
+              <h3>Solr</h3>
+            </li>
+            <li class="fragment">
+              <h3>Elastic Search</h3>
+            </li>
+            <li class="fragment">
+              <h3>PostgreSQL</h3>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Postgresql 8.3</h2>
+          <div>tsvector</div>
+          <div>tsquery</div>
+        </section>
+
+        <section>
+          <h2>tsvector</h2>
+          <pre><code data-trim>
+select to_tsvector('Lorem ipsum dolor sit amet');
+=> 'amet':5 'dolor':3 'ipsum':2 'lorem':1 'sit':4
+</code></pre>
+          <h2>tsquery</h2>
+          <pre><code data-trim>
+select to_tsquery('Lorem') || to_tsquery('ipsum');
+=> 'lorem' | 'ipsum'
+</code></pre>
+        </section>
+
+
+
+        <section>
+          <h2>But does it have features?</h2>
+        </section>
+
+        <section>
+          <pre><code data-trim >
+create_table "posts", force: true do |t|
+  t.text "content"
+end
+            </code></pre>
+            <div class="fragment">Basic search:
+            <pre><code data-trim >
+SELECT * FROM posts WHERE to_tsvector(content) @@
+  to_tsquery('simple') && to_tsquery('query');</code></pre></div>
+            <div class="fragment">Any word:
+            <pre><code data-trim >
+SELECT * FROM posts WHERE to_tsvector(content) @@
+  to_tsquery('simple') || to_tsquery('query');</code></pre></div>
+           <div class="fragment"> Prefix:
+            <pre><code data-trim >
+SELECT * FROM posts WHERE to_tsvector(content) @@
+  to_tsquery('simple' || ':*') && to_tsquery('query' || ':*');</code></pre></div>
+        </section>
+
+        <section>
+          <h2>Trigram</h2>
+          <pre class="fragment"><code data-trim>CREATE EXTENSION "pg_trgm";</code></pre>
+          <pre class="fragment"><code data-trim>
+select show_trgm('Lorem Ipsum');
+=> {"  i","  l"," ip"," lo","em ",ips,lor,ore,psu,rem,sum,"um "}</code></pre>
+<pre class="fragment"><code data-trim>
+select similarity('java', 'javascript');
+=> 0.333333
+</code></pre>
+<pre class="fragment"><code data-trim>
+select similarity('ruby', 'php');
+=> 0
+</code></pre>
+<pre class="fragment"><code data-trim>
+SELECT * FROM posts WHERE content % 'simple query';
+</code></pre>
+
+        </section>
+        <section>
+          <h2>Weighting</h2>
+        </section>
+
+
+        <section>
+          <ul>
+            <li>Scoping</li>
+            <li>Disjunctions</li>
+            <li>Conjunctions</li>
+            <li>Restrictions</li>
+            <li>Pagination</li>
+            <li>Ordering</li>
+            <li>Grouping</li>
+            <li>Joins</li>
+          </ul>
+        </section>
+
+        <section>
+          <ul>
+            <li>WHERE</li>
+            <li>LIMIT</li>
+            <li>OFFSET</li>
+            <li>ORDER</li>
+            <li>GROUP BY</li>
+            <li>JOIN</li>
+          </ul>
+          <div>
+            <img src="are_you_kidding.png" style="border: 0; width: 30%"/>
+          </div>
+        </section>
+
+        <section>
+          <h3>Faceted search</h3>
+          <img src="faceted_search.png">
+        </section>
+        <section>
+          <ul>
+            <li>http://tech.pro/tutorial/1142/building-faceted-search-with-postgresql</li>
+            <li class="fragment">http://www.garysieling.com/blog/gin-vs-gist-for-faceted-search-with-postgres-full-text-indexes</li>
+            <li class="fragment">http://coffeecode.net/archives/270-A-Flask-of-full-text-search-in-PostgreSQL.html</li>
+          </ul>
+        </section>
+
+        <section>
+          <img src="fuck.jpg"/>
+        </section>
+
+        <section>
+          <img src="thinking-meme.png">
+        </section>
+
+        <section>
+          <h1>But does it scale?</h1>
+        </section>
+
+        <section>
+          <pre><code data-trim>gem 'pg_search'</code></pre>
+          <pre><code data-trim>gem 'sunspot_rails'</code></pre>
+          <pre><code data-trim>gem 'sunspot_solr'</code></pre>
+        </section>
+
+        <section>
+          <pre><code data-trim>
+create_table "posts", force: true do |t|
+  t.string   "title"
+  t.text     "content"
+end
+</code></pre>
+        </section>
+
+        <section>
+          pg_search:
+          <pre><code data-trim>
+class Post &lt; ActiveRecord::Base
+  include PgSearch
+  pg_search_scope :search_with_postgres,
+    against: [:title, :content], using: :tsearch
+end
+</code></pre>
+sunspot:
+<pre><code data-trim>
+class Post &lt; ActiveRecord::Base
+  searchable do
+    text :title, :content
+  end
+end
+</code></pre>
+        </section>
+
+        <section>
+<pre><code data-trim>
+Post.create do |post|
+  post.title   = Faker::Lorem.sentence
+  post.content = Faker::Lorem.sentence(30)
+end
+</code></pre>
+pg_search:
+<pre><code data-trim>
+Post.search_with_postgres(Faker::Lorem.sentence(3)).limit(30).to_a
+</code></pre>
+sunspot:
+<pre><code data-trim>
+Post.search do
+  fulltext Faker::Lorem.sentence(3)
+end.results
+</code></pre>
+        </section>
+
+        <section>
+        	<img src="large_dataset.png">
+        </section>
+
+        <section>
+<pre><code data-trim>
+Post.create do |post|
+  post.title   = Faker::Lorem.sentence
+  post.content = Faker::Lorem.sentence(5)
+end
+</code></pre>
+pg_search:
+<pre><code data-trim>
+Post.search_with_postgres(Faker::Lorem.sentence(1)).limit(30).to_a
+</code></pre>
+sunspot:
+<pre><code data-trim>
+Post.search do
+  fulltext Faker::Lorem.sentence(1)
+end.results
+</code></pre>
+        </section>
+
+        <section>
+        	<img src="small_dataset.png">
+        </section>
+
+        <section>
+          <img src="wat.png">
+        </section>
+
+        <section>
+
+<pre><code data-trim>
+Post.create do |post|
+  post.title   = ""
+  post.content = Faker::Name.name
+end
+</code></pre>
+pg_search:
+<pre><code data-trim>
+Post.search_with_postgres(Faker::Name.first_name).limit(30).to_a
+</code></pre>
+sunspot:
+<pre><code data-trim>
+Post.search do
+  fulltext Faker::Name.first_name
+end.results
+</code></pre>
+        </section>
+
+        <section>
+          <img src="sparse_dataset.png">
+					<div class="fragment">
+					  <img src="oh_yes.GIF", style="position: fixed; top: 0; left: 0">
+					</div>
+        </section>
+
+        <section>
+<pre><code data-trim>
+pg_search_scope :search,
+  against: [:id, :system_id, :description, :first_reference, :second_reference],
+  associated_against: {
+    print_supplier: [:name],
+    end_customer: [:name],
+    client: [:name, :short_name]
+  }
+  using: {
+    tsearch: { prefix: true }
+  }
+</code></pre>
+        <div class="fragment">
+          <img src="search_performance.png",>
+        </div>
+        </section>
+
+
+				<!-- KILLA PART END -->
+
+				<section>
+					<h2>UUID as Primary key</h2>
+					<pre class="fragment"><code data-trim contenteditable>
+						CREATE EXTENSION "uuid-ossp";
+SELECT uuid_generate_v4();
+#=> cf4fadf7-22e0-4f46-bdda-232b7883a1c9
+					</code></pre>
+					<pre class="fragment"><code data-trim>
+create_table('my_table_name', id: :uuid) do |t|
+  t.string 'title'
+end
+					</code></pre>
+					<pre class="fragment"><code data-trim>
+User.create.attributes
+# => {"id"=>"468cdfa4-1c11-4e34-a996-ecc561c0e866", (...) }
+					</code></pre>
+				</section>
+
+				<section>
+					<h2>PostGIS</h2>
+					<h3>Spatial and Geographic Objects for PostgreSQL</h3>
+				</section>
+
+				<section>
+					<h2>PostGIS – gentle introduction</h2>
+					<img src="cartesian_spherical.jpg">
+				</section>
+
+				<section>
+					<h2>PostGIS – gentle introduction</h2>
+					<img src="lax_cdg.jpg">
+				</section>
+
+				<section>
+					<h2>PostGIS – gentle introduction</h2>
+					<pre><code data-trim>
+SELECT ST_Distance(
+  ST_GeometryFromText('Point(-118.4079 33.9434)'),  -- Los Angeles
+  ST_GeometryFromText('Point(2.5711 49.0039)'))     -- Paris
+    AS geometry_distance,
+ST_Distance(
+  ST_GeographyFromText('Point(-118.4079 33.9434)'), -- Los Angeles
+  ST_GeographyFromText('Point(2.5711 49.0039)'))    -- Paris
+    AS geography_distance;
+
+ geometry_distance | geography_distance
+-------------------+--------------------
+  121.912825827515 |   9125804.29716346
+ 				</code></pre>
+ 				</section>
+
+				<section>
+				<h2>Postgis – select POI within 2km</h2>
+				<div class="fragment">
+					Create column
+					<pre><code data-trim>
+	ALTER TABLE pois ADD COLUMN location geography(Point,4326);
+					</code></pre>
+				</div>
+				<div class="fragment">
+					Add POI
+					<pre><code data-trim>
+INSERT INTO pois(name, location)
+ VALUES(
+  "Sample",
+  ST_MakePoint(52.228, 21.011), 4326)
+ );
+					</code></pre>
+				</div>
+				<div class="fragment">
+					Select POIs within 2km of desired location
+					<pre><code data-trim>
+	SELECT * FROM pois WHERE
+	 ST_DWithin(
+	  location,
+	  ST_MakePoint(52.218, 21.019), # desired point (Warsaw)
+	  2000 # Meters
+	 )
+					</code></pre>
+				</div>
+				</section>
+
+				<section>
+					<h2>Postgis – shapes example</h2>
+					<img src="postgis_shape.png" class="fragment"/>
+				</section>
+
+				<section>
+					<h2>Postgis – shapes example</h2>
+					<div class="fragment">
+						<pre><code data-trim>
+ALTER TABLE districts ADD COLUMN shape geography(MultiPolygon,4326);
+						</code></pre>
+					</div>
+					<div class="fragment">
+						<pre><code data-trim>
+INSERT INTO districts(name, shape)
+ VALUES(
+  "Silesian",
+  ST_PolygonFromText('POLYGON((-71.1776585052917 42.3902909739571,-71.1776820268866 42.3903701743239,
+-71.1776063012595 42.3903825660754,-71.1775826583081 42.3903033653531,-71.1776585052917 42.3902909739571))')
+ );
+ 					</code></pre>
+ 				</div>
+ 				<div class="fragment">
+						<pre><code data-trim>
+SELECT name FROM districts WHERE
+ ST_CONTAINS(
+   shape,
+   ST_MakePoint(52.218, 21.019)
+ )
+ 					</code></pre>
+ 				</div>
+				</section>
+
+        <section>
+          <h2>Postgis – indexing</h2>
+          <pre class="fragment"><code data-trim>
+SELECT COUNT(*) FROM places;
+  count
+---------
+ 8738610
+          </code></pre>
+          <pre class="fragment"><code data-trim>
+EXPLAIN ANALYZE SELECT pl.full_name
+ FROM places pl
+ WHERE
+  ST_DWithin(
+   pl.location,
+   ST_GeomFromEWKT('SRID=4326;POINT(3.382491 50.609511)'), 1.0899
+  );
+                                                                                                                    QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on places pl  (cost=577.43..47434.52 rows=789 width=25) (actual time=6.446..37.533 rows=16613 loops=1)
+   Recheck Cond: (location && '0103000020E61000000100000005000000DCD440F33957024028D2FD9C82C24840DCD440F33957024038BBB54C86D94940EEB25F77BAE3114038BBB54C86D94940EEB25F77BAE3114028D2FD9C82C24840DCD440F33957024028D2FD9C82C24840'::geometry)
+   Filter: (('0101000020E61000005C1D0071570F0B40B0C6D974044E4940'::geometry && st_expand(location, 1.0899::double precision)) AND _st_dwithin(location, '0101000020E61000005C1D0071570F0B40B0C6D974044E4940'::geometry, 1.0899::double precision))
+   Rows Removed by Filter: 2582
+   ->  Bitmap Index Scan on places_location_idx  (cost=0.00..577.23 rows=11842 width=0) (actual time=5.869..5.869 rows=19195 loops=1)
+         Index Cond: (location && '0103000020E61000000100000005000000DCD440F33957024028D2FD9C82C24840DCD440F33957024038BBB54C86D94940EEB25F77BAE3114038BBB54C86D94940EEB25F77BAE3114028D2FD9C82C24840DCD440F33957024028D2FD9C82C24840'::geometry)
+ Total runtime: 38.362 ms
+          </code></pre>
+
+        </section>
+				<section>
+					<h2>But there’s more!</h2>
+					<ul>
+						<li class="fragment">ST_Area – Returns the area of the surface if it is a polygon or multi-polygon.</li>
+						<li class="fragment">ST_Centroid — Returns the geometric center of a geometry.</li>
+						<li class="fragment">ST_Touches — Returns TRUE if the geometries have at least one point in common, but their interiors do not intersect.</li>
+						<li class="fragment">ST_ShortestLine — Returns the 2-dimensional shortest line between two geometries</li>
+						<li class="fragment">And many, many more…</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Stored procedures...</h2>
+					<img src="oh-god-why.png" class="fragment" />
+				</section>
+
+				<section>
+					<h2>Stored procedures...</h2>
+					<pre class="fragment"><code data-trim>
+CREATE OR REPLACE FUNCTION update_reason_for_document() RETURNS trigger as $$
+      DECLARE
+        change_reason varchar := '';
+      BEGIN
+        IF (OLD.name IS DISTINCT FROM NEW.name) THEN
+          change_reason := change_reason || 'NAME;';
+        END IF;
+
+        IF (OLD.document_type IS DISTINCT FROM NEW.document_type) THEN
+          change_reason := change_reason || 'DOCUMENT TYPE;';
+        END IF;
+
+        INSERT INTO documents_historical_reasons(document_id, change_reason)
+          VALUES (NEW.document_id, change_reason);
+
+        RETURN NEW;
+      END;
+
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER update_history
+      BEFORE UPDATE OF document_type, name ON documents
+      FOR EACH ROW
+      WHEN (OLD.document_type IS DISTINCT FROM NEW.document_type
+            OR OLD.name IS DISTINCT FROM NEW.name)
+      EXECUTE PROCEDURE update_reason_for_document();
+					</code></pre>
+				</section>
+
+				<section>
+					<h2>But...</h2>
+					<img src="stored_procedures_js.jpg" class="fragment" />
+				</section>
+
+				<section>
+					<h2>Stored procedures – JavaScript</h2>
+					<pre><code data-trim>
+CREATE TABLE ratings (id int, count int, total int, average float);
+
+CREATE FUNCTION add_rating(id int, rating int)
+ RETURNS float AS
+$$
+ var data = plv8.execute("SELECT count, total, average FROM ratings
+                          WHERE id = $1", [id])[0];
+ var newTotal = data.total + rating;
+ var newCount = data.count + 1;
+ var newAverage = (newTotal / newCount);
+ plv8.execute("UPDATE ratings SET count = $1, total = $2, average = $3
+               WHERE id = $4",
+ [newCount, newTotal, newAverage, id]);
+ return newAverage;
+$$
+LANGUAGE plv8;
+					</code></pre>
+				</section>
+
+				<section>
+					<h2>Stored procedures – JavaScript</h2>
+					<pre><code data-trim>
+INSERT INTO ratings VALUES (1, 0, 0, 0);
+					</code></pre>
+					<pre><code data-trim>
+SELECT add_rating(1, 5);
+ add_rating
+------------
+ 5
+ 					</code></pre>
+ 					<pre><code data-trim>
+SELECT add_rating(1, 4);
+ add_rating
+------------
+ 4.5
+ 				</code></pre>
+ 				</section>
+
+ 				<section>
+					<h1>Thanks!</h1>
+				</section>
+
+ 				<section>
+					<h1>Questions?</h1>
+				</section>
+
+				<section>
+					<h2>Useful links:</h2>
+					<ul>
+						<li><a href="https://code.google.com/p/plv8js/">https://code.google.com/p/plv8js/</a></li>
+						<li><a href="http://www.postgresql.org/docs/current/static/hstore.html">http://www.postgresql.org/docs/current/static/hstore.html</a></li>
+						<li><a href="http://www.postgresql.org/docs/current/static/functions-json.html">http://www.postgresql.org/docs/current/static/functions-json.html</a></li>
+						<li>
+						<li><a href="http://www.postgresql.org/docs/9.3/static/textsearch.html">http://www.postgresql.org/docs/9.3/static/textsearch.html</a></li>
+						<li><a href="https://github.com/JackC/surus">https://github.com/JackC/surus</a></li>
+						<li><a href="http://postgis.net/">http://postgis.net/</a></li>
+					</ul>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>

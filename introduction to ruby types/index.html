@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Introduction to ruby types</title>
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Introduction to ruby types</h1>
+				</section>
+
+				<section>
+					<h2>Łukasz Strzebińczyk</h2>
+				</section>
+
+        <section>
+          In Ruby there is a couple of basic data types:
+          <div class='fragment'>nil</div>
+          <div class='fragment'>boolean</div>
+          <div class='fragment'>number</div>
+          <div class='fragment'>string</div>
+          <div class='fragment'>symbol</div>
+          <div class='fragment'>array</div>
+          <div class='fragment'>hash</div>
+        </section>
+
+        <section>
+          <h2>nil</h2>
+          <ul>
+            <li class="fragment">Represents lack of value</li>
+            <li class="fragment">is falsy</li>
+            <li class="fragment">...but a regular object</li>
+            <li class="fragment">everything responds to #nil? in ruby</li>
+            <li class="fragment">
+              often returned from methods if their basic feature fails:
+              <ul>
+                <li class='fragment'>
+                  <pre><code data-trim>
+[1, 2, 3].find{|n| n == 1 }
+=> 1
+                  </code></pre>
+                </li>
+                <li class='fragment'>
+                  <pre><code data-trim>
+[1, 2, 3].find{|n| n == 4 }
+ => nil
+                  </code></pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>bool values</h2>
+          <ul>
+            <li class='fragment'>AKA true/false</li>
+            <li class='fragment'>represent logical truthiness and falsiness</li>
+            <li class='fragment'>always (well, usually) returned from '?' methods</li>
+              <li class='fragment'>
+                <pre><code data-trim>
+"string".empty? => false
+                </code></pre>
+              </li>
+              <li class='fragment'>
+                <pre><code data-trim>
+"".empty? => true
+                </code></pre>
+              </li>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>numbers</h2>
+          <ul>
+            <li class='fragment'>
+              There is a couple of classes describing numbers in ruby:
+              <ul>
+                <li class='fragment'>
+                  <pre><code data-trim>
+0.class => Fixnum
+                  </code></pre>
+                </li>
+                <li class='fragment'>
+                  <pre><code data-trim>
+0.0.class => Float
+                  </code></pre>
+                </li>
+                <li class='fragment'>
+                  <pre><code data-trim>
+(100**10).class => Bignum
+                  </code></pre>
+                </li>
+              </ul>
+            </li>
+            <li class='fragment'>
+              basically, they represent numerical value as we know and love
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>string</h2>
+          <ul>
+            <li class='fragment'>
+              Strings are sequences of characters, used to represent text data
+            </li>
+            <li class='fragment'>
+              You can easily recognise them: "string", 'another string'
+            </li>
+            <li class='fragment'>
+              Most widely used objects in web applications. Users names, posts contents ands so on, are all strings.
+            </li>
+            <li class='fragment'>
+              They are used to represent the actual text value contained in the characters.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>symbol</h2>
+          <ul>
+            <li class='fragment'>
+              Symbols are the hardest to explain
+            </li>
+            <li class='fragment'>
+              They are not just a fancy strings!
+            </li>
+            <li class='fragment'>
+              You can recognise them by a colon in front of them: :symbol, :another_symbol
+            </li>
+            <li class='fragment'>
+              They are used to represent an idea, concept, which surfaces in the application
+            </li>
+            <li class='fragment'>
+              <div>In rails app you are likely to find :id, :name, :user, :action, :controller and so on.</div>
+              <div>We don't care about their string values, we care about concepts those point us to</div>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>arrays</h2>
+          <ul>
+            <li class='fragment'>Arrays represent a collection of objects</li>
+            <li class='fragment'>They are largely what differs ruby from lower level languages like c, c++ or java</li>
+            <li class='fragment'>
+              They are containers, they contain objects of another classes. You can easily have
+              <ul>
+                <li class="fragment">Arrays of numbers: <pre><code>[1, 2, 3]</code></pre></li>
+                <li class="fragment">Arrays of strings: <pre><code>["a", "b", "c"]</code></pre></li>
+                <li class="fragment">Arrays of whatever you like: <pre><code>[1, "a", [""], {s: [1]}]</code></pre></li>
+                <li class="fragment">However it's best for your arrays to store objects of just one class!</li>
+
+              </ul>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>arrays, part 2</h2>
+          <ul>
+            <li class='fragment'>Since arrays are containers, they offer a great deal of features</li>
+            <li class='fragment'>
+              Finding elements:
+              <pre><code data-trim>
+[1, 2, 3].find{|n| n.even? } => 2
+              </code></pre>
+            </li>
+            <li class='fragment'>
+              Sorting :
+              <pre><code data-trim>
+[2, 6, 4, 8].sort
+ => [2, 4, 6, 8]
+              </code></pre>
+            </li>
+            <li class='fragment'>
+              Filtering :
+              <pre><code data-trim>
+[2, 6, 4, 8].delete_if{|elem| elem > 5 }
+ => [2, 4]
+              </code></pre>
+            </li>
+            <li class='fragment'>
+              You can apply some code to each element and return new array:
+              <pre><code data-trim>
+[1, 2, 3, 4, 5].map{|elem| elem ** 2}
+ => [1, 4, 9, 16, 25]
+              </code></pre>
+            </li>
+            <li class='fragment'>
+              And much much more!
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>hashes</h2>
+          <ul>
+            <li class='fragment'>Hashes are also containers, but they associate key objects with value objects</li>
+            <li class='fragment'>
+              <pre><code>
+2.2.0 :001 > hash = {key: 'value'}
+ => {:key=>"value"}
+2.2.0 :002 > hash[:key]
+ => "value"
+              </code></pre>
+            </li>
+            <li class='fragment'>
+              Symbols are usually used as keys
+            </li>
+            <li class='fragment'>
+              Basically used as container for data
+            </li>
+          </ul>
+        </section>
+
+        <section>
+
+        </section>
+
+
+
+
+
+
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
