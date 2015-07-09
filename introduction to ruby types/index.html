@@ -34,7 +34,7 @@
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
 				<section>
-					<h1>Introduction to ruby types</h1>
+					<h1>Introduction to object oriented programming in ruby</h1>
 				</section>
 
 				<section>
@@ -42,7 +42,47 @@
 				</section>
 
         <section>
-          In Ruby there is a couple of basic data types:
+          Ruby is object oriented programming language
+        </section>
+
+        <section>
+          Object oriented programming languages are all about objects.
+        </section>
+
+        <section>
+          Lets look at this piece of code:
+          <pre><code data-trim>
+object.method(param)
+=> return_value
+          </code></pre>
+          <div class='fragment'>
+            'object' is an object
+          </div>
+          <div class='fragment'>
+            'param' is an object
+          </div>
+          <div class='fragment'>
+            'return_value' is an object
+          </div>
+          <div class='fragment'>
+            'method' is a method, a mean by which all of these interact with each another.
+          </div>
+        </section>
+
+        <section>
+          Analising and crafting data and logic flow through objects and methods is the heart of object-oriented programming.
+        </section>
+
+        <section>
+          <div>Objects come in all shapes and sizes.</div> 
+          <div>Different objects are used for different jobs.</div>
+          <div class='fragment'>but ultimately...</div>
+          <div class='fragment'>...they are all just an instance of the same, basic thing</div>
+        </section>
+
+
+        <section>
+          In Ruby there is a couple of basic classes of objects:
           <div class='fragment'>nil</div>
           <div class='fragment'>boolean</div>
           <div class='fragment'>number</div>
@@ -50,6 +90,10 @@
           <div class='fragment'>symbol</div>
           <div class='fragment'>array</div>
           <div class='fragment'>hash</div>
+        </section>
+
+        <section>
+          Those are the most basic building blocks of the ruby code.
         </section>
 
         <section>
@@ -245,14 +289,212 @@
         </section>
 
         <section>
-
+          <h2>hashes, part 2</h2>
+          <div>
+            Up to ruby 1.9 hashes were written like this:
+            <pre><code data-trim>{:key => "value"}</code></pre>
+          </div>
+          <div class='fragment'>
+            But since ruby 1.9.0 you can write this as
+            <pre><code data-trim>{key: "value"}</code></pre>
+          </div>
+          <div class='fragment'>
+            And that's exactly the same thing
+<pre><code data-trim>
+2.2.0 :001 > {:key => 'value'} == {key: 'value'}
+ => true
+ </code></pre>
+          </div>
         </section>
 
+        <section>
+          But we rarely use just the primitives. For the most time we have a set of informations, which need to be handled together.
+        </section>
 
+        <section>
+          Informations, which we need to...
+          <div class='fragment'><i>compose</i></div>
+          <div class='fragment'>and...</div>
+          <div class='fragment'><i>encapsulate</i></div>
+        </section>
 
+        <section>
+          This is where classes show up.
+        </section>
 
+        <section>
+          Each object is an instance of some class:
+          <pre><code data-trim>
+2.2.0 :001 > nil.class
+=> NilClass 
+2.2.0 :002 > "string".class
+=> String 
+2.2.0 :003 > :symbol.class
+=> Symbol 
+          </code></pre>
+          <div class='fragment'>
+          Classes are objects too!
+          <pre><code data-trim>
+2.2.0 :006 > String.class
+ => Class
+ </code></pre>
+ </div>
+        </section>
 
+        <section>
+          We use classes to encapsulate data and behavior.
+        </section>
 
+        <section>
+          Say, if we want to represent a person with name and age in code, we can write such class:
+<pre><code data-trim>
+class Person
+  def initialize(name, age)
+    @name = name
+    @age  = age
+  end
+end  
+</code></pre>
+<div class='fragment'>
+  And now we can initialise those:
+<pre><code data-trim>
+2.2.0 :001 > Person.new('Łukasz', 26)
+=> #&ltPerson:0x00000001d36160 @name="Łukasz", @age=26&gt 
+  
+</code></pre>
+
+</div>
+          <div class='fragment'>
+            This is what we call encapsulation of data. 
+          </div>
+          <div class='fragment'>
+            We locked a couple of informations in single container, and we use it as a whole.
+          </div>
+        </section>
+
+        <section>
+          If we want to also encapsulate behavior, we add methods.
+          <div class='fragment'>For example, is the person an adult?</div>
+<pre class='fragment'><code data-trim>
+class Person
+  def initialize(name, age)
+    @name = name
+    @age  = age
+  end
+
+  def adult?
+    @age >= 18
+  end
+end
+
+2.2.0 :001 > Person.new('Łukasz Strzebińczyk', 26).adult?
+=> true
+</code></pre>
+        </section>
+        <section>
+          Or is the persons name hard to pronounce?
+          <div class='fragment'>
+<pre><code data-trim>
+class Person
+  def initialize(name, age)
+    @name = name
+    @age  = age
+  end
+
+  def adult?
+    @age >= 18
+  end
+
+  def name_hard_to_pronounce?
+    @name.downcase.include?('strz')
+  end
+end
+
+2.2.0 :001 > Person.new('Łukasz Strzebińczyk', 26).name_hard_to_pronounce?
+=> true
+</code></pre>
+          </div>
+        </section>
+
+        <section>
+          From here, the universe is ready to be explored!
+        </section>
+        <section>
+          However...
+        </section>
+
+        <section>
+          When working on rails application, we often encounter things like this:
+          <pre><code data-trim>
+class User < ActiveRecord::Base
+end
+          </code></pre>
+          <div class='fragment'>
+          It looks a hell lot like
+          <pre><code data-trim>
+class User
+end
+          </code></pre>
+
+          </div>
+          <div class='fragment'>
+          And it does magic.
+          </div>
+
+        </section>
+        <section>
+          Except it does not.
+        </section>
+
+        <section>
+          It's just a very cleverly written code, which does a lot of work for you.
+          <div class='fragment'>so you are free to work on something productive</div>
+        </section>
+
+        <section>
+          If we have an application with posts in database schema:
+<pre><code>
+create_table "posts", force: true do |t|
+  t.string   "title"
+  t.text     "content"
+  t.integer  "user_id"
+end
+</code></pre>
+        </section>
+        <section>
+          Then the corresponding ActiveRecord class:
+<pre><code>
+class Post &lt ActiveRecord::Base
+  belongs_to :user
+end
+</code></pre>
+          <div class='fragment'>
+            does roughly this:
+<pre><code>
+class Post
+  attr_accessor :title, :content, :user_id  
+
+  def initialize(params)
+    @title   = params[:title]
+    @content = params[:content]
+    @user_id = params[:user_id]
+  end
+
+  def user
+    User.find_by(id: @user_id)
+  end
+end
+</code></pre>
+          </div>
+        </section>
+        <section>
+          Just remember there is no magic involved.
+          <div>All the code you see is just objects and methods.</div>
+        </section>
+
+        <section>
+          Thank you!
+        </section>
 
 		<script src="lib/js/head.min.js"></script>
 		<script src="js/reveal.min.js"></script>
