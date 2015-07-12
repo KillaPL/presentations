@@ -50,6 +50,11 @@
         </section>
 
         <section>
+          In Ruby
+          <div class='fragment'>Everything is an object™</div>
+        </section>
+
+        <section>
           Lets look at this piece of code:
           <pre><code data-trim>
 object.method(param)
@@ -118,6 +123,22 @@ object.method(param)
  => nil
                   </code></pre>
                 </li>
+                <li class='fragment'>
+                  <pre><code data-trim>
+User.find_by(id: 1)
+=> #&ltUser id: 1&gt 
+                  </code></pre>
+                </li>
+
+                <li class='fragment'>
+                  <pre><code data-trim>
+User.find_by(id: 100)
+=> nil 
+                  </code></pre>
+                </li>
+
+
+
               </ul>
             </li>
           </ul>
@@ -206,9 +227,9 @@ object.method(param)
               They are used to represent an idea, concept, which surfaces in the application
             </li>
             <li class='fragment'>
-              <div>In rails app you are likely to find :id, :name, :user, :action, :controller and so on.</div>
-              <div>We don't care about their string values, we care about concepts those point us to</div>
+              In rails app you are likely to find :id, :name, :user, :action, :controller and so on.
             </li>
+            <li class='fragment'>We don't care about their string values, we care about concepts those point us to</li>
           </ul>
         </section>
 
@@ -447,7 +468,7 @@ end
         </section>
 
         <section>
-          It's just a very cleverly written code, which does a lot of work for you.
+          It's just a very cleverly written code, which does a lot of work for you
           <div class='fragment'>so you are free to work on something productive</div>
         </section>
 
